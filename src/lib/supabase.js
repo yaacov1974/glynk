@@ -7,4 +7,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error("Supabase credentials missing. Check your .env.local file.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = (supabaseUrl && supabaseAnonKey)
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : null;
