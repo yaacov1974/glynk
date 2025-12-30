@@ -17,7 +17,7 @@ const Hero = () => {
             <div className="flex flex-col gap-4">
               <h1 className="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-tight md:text-5xl lg:text-6xl">
                 Own Your Data. <br />
-                <span className="text-primary">Secure Your Links1.</span> <br />
+                <span className="text-primary">Secure Your Links.</span> <br />
                 Maximize Profits.
               </h1>
               <h2 className="text-slate-600 dark:text-slate-400 text-lg font-normal leading-relaxed md:text-xl max-w-2xl mx-auto lg:mx-0">
