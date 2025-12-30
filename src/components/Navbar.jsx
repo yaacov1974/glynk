@@ -1,7 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Get initial user
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (event === 'SIGNED_OUT') {
+        navigate('/');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsOpen(false);
+  };
 
   const navLinks = [
     { name: 'Features', href: '#features' },
@@ -43,9 +69,18 @@ const Navbar = () => {
         <div className="flex items-center gap-2">
           {/* Action Buttons - Hidden on mobile, shown in menu */}
           <div className="hidden sm:flex items-center gap-2">
-            <button className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary hover:bg-primary/90 text-white text-sm font-bold leading-normal tracking-[0.015em] transition-colors shadow-lg shadow-primary/30">
-              <span className="truncate">Login</span>
-            </button>
+            {user ? (
+              <button 
+                onClick={handleLogout}
+                className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-slate-200 dark:bg-[#232f48] hover:bg-slate-300 dark:hover:bg-[#324467] text-slate-900 dark:text-white text-sm font-bold leading-normal tracking-[0.015em] transition-colors"
+              >
+                <span className="truncate">Logout</span>
+              </button>
+            ) : (
+              <Link to="/login" className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary hover:bg-primary/90 text-white text-sm font-bold leading-normal tracking-[0.015em] transition-colors shadow-lg shadow-primary/30">
+                <span className="truncate">Login</span>
+              </Link>
+            )}
           </div>
 
           {/* Hamburger Menu Token */}
@@ -76,9 +111,18 @@ const Navbar = () => {
             ))}
           </div>
           <div className="flex flex-col gap-3 pt-6 border-t border-slate-200 dark:border-[#232f48]">
-            <button className="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 bg-primary text-white font-bold transition-colors shadow-lg shadow-primary/30">
-              Login
-            </button>
+            {user ? (
+              <button 
+                onClick={handleLogout}
+                className="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 bg-slate-200 dark:bg-[#232f48] text-slate-900 dark:text-white font-bold transition-colors"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link to="/login" onClick={() => setIsOpen(false)} className="flex w-full cursor-pointer items-center justify-center rounded-lg h-12 bg-primary text-white font-bold transition-colors shadow-lg shadow-primary/30">
+                Login
+              </Link>
+            )}
           </div>
         </div>
       )}
