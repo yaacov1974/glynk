@@ -78,7 +78,7 @@ const AuthPage = () => {
         </svg>
       </div>
       <h2 className="text-2xl font-bold leading-tight tracking-tight text-white">
-        <b><span className="text-[#10b981]">good</span></b>
+        <b><span className="text-[#10b981]">Good</span></b>
         <b><span className="text-[#135bec]"> Link</span></b>
       </h2>
     </Link>
@@ -106,7 +106,7 @@ const AuthPage = () => {
               >
                 <div className="text-center mb-2">
                   <h1 className="text-2xl font-bold text-white mb-2">Welcome Back</h1>
-                  <p className="text-slate-400">Log in to your goodLink.ai account</p>
+                  <p className="text-slate-400">Log in to your GoodLink.ai account</p>
                 </div>
 
                 {error && (
@@ -205,7 +205,7 @@ const AuthPage = () => {
                 className="flex flex-col gap-6"
               >
                 <div className="text-center mb-2">
-                  <h1 className="text-2xl font-bold text-white mb-2">Join goodLink.ai</h1>
+                  <h1 className="text-2xl font-bold text-white mb-2">Join GoodLink.ai</h1>
                   <p className="text-slate-400">Start securing your data today</p>
                 </div>
 
@@ -342,7 +342,7 @@ const AuthPage = () => {
         </div>
 
         <div className="mt-8 text-xs text-slate-500 text-center max-w-[280px]">
-          By continuing, you agree to goodLink's <a href="#" className="underline">Terms of Service</a> and <a href="#" className="underline">Privacy Policy</a>.
+          By continuing, you agree to GoodLink's <a href="#" className="underline">Terms of Service</a> and <a href="#" className="underline">Privacy Policy</a>.
         </div>
       </div>
     </div>

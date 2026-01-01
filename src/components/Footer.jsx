@@ -14,7 +14,7 @@ const Footer = () => {
                 </svg>
               </div>
               <h2 className="text-xl font-bold leading-tight tracking-tight">
-                <b><span className="text-[#10b981]">good</span></b>
+                <b><span className="text-[#10b981]">Good</span></b>
                 <b><span className="text-[#135bec]"> Link</span></b>
               </h2>
             </a>
@@ -45,7 +45,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="mt-12 border-t border-slate-200 dark:border-[#232f48] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400">© 2024 goodLink.ai. All rights reserved.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">© 2024 GoodLink.ai. All rights reserved.</p>
           <div className="flex gap-4">
             <a className="text-slate-400 hover:text-primary transition-colors" href="#"><span className="material-symbols-outlined">thumb_up</span></a>
             <a className="text-slate-400 hover:text-primary transition-colors" href="#"><span className="material-symbols-outlined">share</span></a>
