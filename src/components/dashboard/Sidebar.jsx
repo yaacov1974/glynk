@@ -14,6 +14,10 @@ const Sidebar = ({ className = "", onLinkClick }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    // Close mobile menu if open
+    if (onLinkClick) {
+      onLinkClick();
+    }
     // Navigate to homepage first to avoid ProtectedRoute redirecting to /login
     navigate('/');
     await supabase.auth.signOut();
@@ -75,6 +79,7 @@ const Sidebar = ({ className = "", onLinkClick }) => {
           onClick={handleLogout}
           className="flex items-center justify-center gap-3 px-3 py-2 w-full text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-200 text-sm font-medium"
         >
+          <span className="material-symbols-outlined text-[20px]">logout</span>
           Logout
         </button>
       </div>
