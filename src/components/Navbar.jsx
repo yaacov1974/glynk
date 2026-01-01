@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 
 const Navbar = () => {
@@ -103,9 +104,17 @@ const Navbar = () => {
         </div>
       </div>
 
-          {/* Mobile Menu Overlay */}
-      {isOpen && (
-        <div className="md:hidden flex flex-col border-t border-slate-200 dark:border-[#232f48] bg-background-light dark:bg-background-dark p-6 gap-6 animate-in slide-in-from-top-4 duration-200">
+      {/* Mobile Menu Overlay with Smooth Animations */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="md:hidden flex flex-col border-t border-slate-200 dark:border-[#232f48] bg-background-light dark:bg-background-dark overflow-hidden"
+          >
+            <div className="p-6 flex flex-col gap-6">
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <a 
@@ -144,9 +153,11 @@ const Navbar = () => {
                 Login
               </Link>
             )}
+            </div>
           </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 };
