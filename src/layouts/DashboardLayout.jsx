@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/dashboard/Sidebar';
 
 const DashboardLayout = () => {
@@ -34,24 +35,39 @@ const DashboardLayout = () => {
            </button>
         </header>
 
-        {/* Mobile Sidebar Overlay */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-50">
-             {/* Backdrop */}
-             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
-             
-             {/* Sidebar Container */}
-             <div className="absolute left-0 top-0 bottom-0 w-64 bg-[#101622] shadow-2xl animate-in slide-in-from-left duration-200">
-               <div className="flex justify-between items-center p-4 border-b border-[#232f48]">
+        {/* Mobile Sidebar Overlay with Smooth Animations */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <div className="lg:hidden fixed inset-0 z-50">
+              {/* Backdrop */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              
+              {/* Sidebar Container */}
+              <motion.div 
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="absolute left-0 top-0 bottom-0 w-64 bg-[#101622] shadow-2xl"
+              >
+                <div className="flex justify-between items-center p-4 border-b border-[#232f48]">
                   <span className="text-white font-bold ml-2">Menu</span>
                   <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-white">
                     <span className="material-symbols-outlined">close</span>
                   </button>
-               </div>
-               <Sidebar className="w-full h-full border-none pt-2" onLinkClick={() => setIsMobileMenuOpen(false)} />
-             </div>
-          </div>
-        )}
+                </div>
+                <Sidebar className="w-full h-full border-none pt-2" onLinkClick={() => setIsMobileMenuOpen(false)} />
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <Outlet />

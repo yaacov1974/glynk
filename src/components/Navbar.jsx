@@ -105,16 +105,22 @@ const Navbar = () => {
       </div>
 
       {/* Mobile Menu Overlay with Smooth Animations */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isOpen && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             className="md:hidden flex flex-col border-t border-slate-200 dark:border-[#232f48] bg-background-light dark:bg-background-dark overflow-hidden"
           >
-            <div className="p-6 flex flex-col gap-6">
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2, delay: 0.05 }}
+              className="p-6 flex flex-col gap-6"
+            >
           <div className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <a 
@@ -154,7 +160,7 @@ const Navbar = () => {
               </Link>
             )}
             </div>
-          </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
