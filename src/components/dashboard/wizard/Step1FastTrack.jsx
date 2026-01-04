@@ -172,30 +172,52 @@ const Step1FastTrack = ({
     setSafetyCheck((prev) => ({ ...prev, loading: true }));
     const result = await checkUrlSafety(normalizedUrl);
 
-    // Check if URL already exists in links table (only if safety check passed)
+    // Check if URL already exists in links table (check always, not just if safe)
     let urlExists = false;
-    if (result.isSafe) {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        if (user) {
-          const { data: existingLinks, error: linksError } = await supabase
-            .from("links")
-            .select("id, target_url")
-            .eq("user_id", user.id)
-            .eq("target_url", normalizedUrl)
-            .limit(1);
+      if (user) {
+        // Get all links for this user to check for URL matches
+        const { data: existingLinks, error: linksError } = await supabase
+          .from("links")
+          .select("id, target_url")
+          .eq("user_id", user.id);
 
-          if (!linksError && existingLinks && existingLinks.length > 0) {
-            urlExists = true;
-          }
+        if (!linksError && existingLinks && existingLinks.length > 0) {
+          // Normalize URLs for comparison (remove trailing slashes, lowercase, etc.)
+          const normalizeForComparison = (url) => {
+            try {
+              const urlObj = new URL(url);
+              // Remove trailing slash, convert to lowercase, remove www. prefix
+              let normalized = urlObj.href.toLowerCase().replace(/\/$/, "");
+              // Remove www. prefix for comparison
+              if (normalized.includes("://www.")) {
+                normalized = normalized.replace("://www.", "://");
+              }
+              return normalized;
+            } catch {
+              return url.toLowerCase().replace(/\/$/, "");
+            }
+          };
+
+          const normalizedInputUrl = normalizeForComparison(normalizedUrl);
+
+          // Check if any existing link matches the normalized URL
+          urlExists = existingLinks.some((link) => {
+            if (!link.target_url) return false;
+            const normalizedExistingUrl = normalizeForComparison(
+              link.target_url
+            );
+            return normalizedExistingUrl === normalizedInputUrl;
+          });
         }
-      } catch (error) {
-        console.error("Error checking if URL exists:", error);
-        // Don't block user on error, just log it
       }
+    } catch (error) {
+      console.error("Error checking if URL exists:", error);
+      // Don't block user on error, just log it
     }
 
     const safetyState = {
