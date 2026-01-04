@@ -83,57 +83,54 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
     return `https://${trimmed}`;
   };
 
-  // Safety check when URL changes - only after user stops typing
-  useEffect(() => {
-    const performSafetyCheck = async () => {
-      if (!formData.targetUrl || !formData.targetUrl.trim()) {
-        setSafetyCheck({ loading: false, isSafe: null, threatType: null, error: null });
-        // Reset safety in parent
-        if (onSafetyCheckUpdate) {
-          onSafetyCheckUpdate({ isSafe: null, threatType: null });
-        }
-        return;
+  // Safety check function - called when user leaves the field
+  const performSafetyCheck = async () => {
+    if (!formData.targetUrl || !formData.targetUrl.trim()) {
+      setSafetyCheck({ loading: false, isSafe: null, threatType: null, error: null });
+      // Reset safety in parent
+      if (onSafetyCheckUpdate) {
+        onSafetyCheckUpdate({ isSafe: null, threatType: null });
       }
+      return;
+    }
 
-      // Normalize URL (add https:// if missing)
-      const normalizedUrl = normalizeUrl(formData.targetUrl);
-      if (!normalizedUrl) {
-        setSafetyCheck({ loading: false, isSafe: null, threatType: null, error: null });
-        return;
+    // Normalize URL (add https:// if missing)
+    const normalizedUrl = normalizeUrl(formData.targetUrl);
+    if (!normalizedUrl) {
+      setSafetyCheck({ loading: false, isSafe: null, threatType: null, error: null });
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(normalizedUrl);
+    } catch {
+      setSafetyCheck({ loading: false, isSafe: null, threatType: null, error: 'Invalid URL format' });
+      if (onSafetyCheckUpdate) {
+        onSafetyCheckUpdate({ isSafe: null, threatType: null });
       }
+      return;
+    }
 
-      // Validate URL format
-      try {
-        new URL(normalizedUrl);
-      } catch {
-        setSafetyCheck({ loading: false, isSafe: null, threatType: null, error: 'Invalid URL format' });
-        return;
-      }
-
-      // Perform safety check with normalized URL
-      setSafetyCheck(prev => ({ ...prev, loading: true }));
-      const result = await checkUrlSafety(normalizedUrl);
-      const safetyState = {
-        loading: false,
+    // Perform safety check with normalized URL
+    setSafetyCheck(prev => ({ ...prev, loading: true }));
+    const result = await checkUrlSafety(normalizedUrl);
+    const safetyState = {
+      loading: false,
+      isSafe: result.isSafe,
+      threatType: result.threatType,
+      error: result.error || null,
+    };
+    setSafetyCheck(safetyState);
+    
+    // Update parent component with safety check result
+    if (onSafetyCheckUpdate) {
+      onSafetyCheckUpdate({
         isSafe: result.isSafe,
         threatType: result.threatType,
-        error: result.error || null,
-      };
-      setSafetyCheck(safetyState);
-      
-      // Update parent component with safety check result
-      if (onSafetyCheckUpdate) {
-        onSafetyCheckUpdate({
-          isSafe: result.isSafe,
-          threatType: result.threatType,
-        });
-      }
-    };
-
-    // Wait 2 seconds after user stops typing before checking
-    const timeoutId = setTimeout(performSafetyCheck, 2000);
-    return () => clearTimeout(timeoutId);
-  }, [formData.targetUrl, onSafetyCheckUpdate]);
+      });
+    }
+  };
 
   // Auto-fetch title when URL changes - only after user stops typing
   useEffect(() => {
@@ -232,6 +229,7 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
               value={formData.targetUrl}
               onChange={handleUrlChange}
               onPaste={handleUrlPaste}
+              onBlur={performSafetyCheck}
               placeholder="Paste your URL here..."
               className={`w-full px-6 py-5 text-lg bg-[#0b0f19] border-2 rounded-2xl text-white placeholder-slate-500 focus:outline-none transition-all shadow-lg ${
                 safetyCheck.isSafe === false
