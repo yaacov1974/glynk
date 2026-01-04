@@ -62,7 +62,26 @@ export function validateUrl(urlString) {
     };
   }
 
-  // 6. Use validator library to check if hostname is a valid FQDN (Fully Qualified Domain Name)
+  // 6. Check for consecutive hyphens (double hyphens) - not allowed in domains
+  if (hostname.includes('--')) {
+    return {
+      isValid: false,
+      error: 'Domain cannot contain consecutive hyphens (--). Please remove the extra hyphen.',
+    };
+  }
+
+  // 7. Check for hyphens at start or end of domain parts
+  const domainParts = hostname.split('.');
+  for (const part of domainParts) {
+    if (part.startsWith('-') || part.endsWith('-')) {
+      return {
+        isValid: false,
+        error: 'Domain parts cannot start or end with a hyphen',
+      };
+    }
+  }
+
+  // 8. Use validator library to check if hostname is a valid FQDN (Fully Qualified Domain Name)
   // This catches cases like "www.saasaipartners" (missing TLD)
   if (!isFQDN(hostname, {
     require_tld: true,        // Must have TLD
@@ -75,9 +94,6 @@ export function validateUrl(urlString) {
       error: 'Invalid domain format. Domain must be a fully qualified domain name (FQDN) with a valid TLD. Example: domain.com',
     };
   }
-
-  // 7. Split domain into parts for additional custom checks
-  const domainParts = hostname.split('.');
 
   // 12. Check protocol (must be http or https)
   if (hasProtocol) {
