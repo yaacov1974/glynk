@@ -731,7 +731,7 @@ const Step1FastTrack = ({
             }
           >
             <span className="material-symbols-outlined">bolt</span>
-            Create Quick Link (skip...)
+            Create Quick Link (Skip Advanced Settings)
           </button>
           <p className="text-xs text-slate-500 text-center mt-2">
             You can create the link now with default settings, or continue to
