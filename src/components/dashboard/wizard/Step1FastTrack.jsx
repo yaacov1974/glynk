@@ -83,11 +83,15 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
     return `https://${trimmed}`;
   };
 
-  // Safety check when URL changes
+  // Safety check when URL changes - only after user stops typing
   useEffect(() => {
     const performSafetyCheck = async () => {
       if (!formData.targetUrl || !formData.targetUrl.trim()) {
         setSafetyCheck({ loading: false, isSafe: null, threatType: null, error: null });
+        // Reset safety in parent
+        if (onSafetyCheckUpdate) {
+          onSafetyCheckUpdate({ isSafe: null, threatType: null });
+        }
         return;
       }
 
@@ -126,15 +130,20 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
       }
     };
 
-    const timeoutId = setTimeout(performSafetyCheck, 1000);
+    // Wait 2 seconds after user stops typing before checking
+    const timeoutId = setTimeout(performSafetyCheck, 2000);
     return () => clearTimeout(timeoutId);
-  }, [formData.targetUrl]);
+  }, [formData.targetUrl, onSafetyCheckUpdate]);
 
-  // Auto-fetch title when URL changes (only if name is empty or was reset)
+  // Auto-fetch title when URL changes - only after user stops typing
   useEffect(() => {
     const fetchTitle = async () => {
       if (!formData.targetUrl || !formData.targetUrl.trim()) {
         setFetchingTitle(false);
+        // Clear name if URL is empty
+        if (formData.name && formData.name.trim()) {
+          updateFormData('name', '');
+        }
         return;
       }
 
@@ -150,8 +159,17 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
         new URL(normalizedUrl);
         setFetchingTitle(true);
         const title = await fetchPageTitle(normalizedUrl);
-        if (title) {
-          updateFormData('name', title);
+        if (title && title.trim()) {
+          updateFormData('name', title.trim());
+        } else {
+          // If no title found, use domain name as fallback
+          try {
+            const urlObj = new URL(normalizedUrl);
+            const domainName = urlObj.hostname.replace('www.', '');
+            updateFormData('name', domainName);
+          } catch {
+            // If still fails, leave empty
+          }
         }
       } catch (error) {
         // Invalid URL, skip fetching
@@ -161,10 +179,10 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
       }
     };
 
-    // Debounce the title fetch - only fetch if name is empty or URL changed significantly
-    const timeoutId = setTimeout(fetchTitle, 1500);
+    // Wait 2 seconds after user stops typing before fetching title
+    const timeoutId = setTimeout(fetchTitle, 2000);
     return () => clearTimeout(timeoutId);
-  }, [formData.targetUrl, updateFormData]);
+  }, [formData.targetUrl, updateFormData, formData.name]);
 
   const handleUrlChange = (e) => {
     const url = e.target.value;
