@@ -70,7 +70,15 @@ export function validateUrl(urlString) {
   // 7. Split domain into parts
   const domainParts = hostname.split('.');
 
-  // 8. Check TLD (Top Level Domain) - must be at least 2 characters
+  // 8. Check that we have at least 2 parts (domain + TLD)
+  if (domainParts.length < 2) {
+    return {
+      isValid: false,
+      error: 'Domain must include a top-level domain (TLD). Example: domain.com, not just "domain"',
+    };
+  }
+
+  // 9. Check TLD (Top Level Domain) - must be at least 2 characters
   const tld = domainParts[domainParts.length - 1];
   if (!tld || tld.length < 2) {
     return {
@@ -79,7 +87,16 @@ export function validateUrl(urlString) {
     };
   }
 
-  // 9. Check each domain part (label)
+  // 10. Check that TLD contains only letters (no numbers or hyphens in TLD)
+  const tldRegex = /^[a-z]+$/;
+  if (!tldRegex.test(tld)) {
+    return {
+      isValid: false,
+      error: 'Domain extension (TLD) can only contain letters',
+    };
+  }
+
+  // 11. Check each domain part (label)
   for (let i = 0; i < domainParts.length; i++) {
     const part = domainParts[i];
     
@@ -117,7 +134,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 10. Check total domain length (max 253 characters)
+  // 12. Check total domain length (max 253 characters)
   if (hostname.length > 253) {
     return {
       isValid: false,
@@ -125,7 +142,7 @@ export function validateUrl(urlString) {
     };
   }
 
-  // 11. Check for spaces (shouldn't exist after trim, but double-check)
+  // 13. Check for spaces (shouldn't exist after trim, but double-check)
   if (hostname.includes(' ')) {
     return {
       isValid: false,
@@ -133,7 +150,7 @@ export function validateUrl(urlString) {
     };
   }
 
-  // 12. Check for special forbidden characters
+  // 14. Check for special forbidden characters
   const forbiddenChars = ['@', '!', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '[', ']', '{', '}', '|', '\\', ';', ':', '"', "'", '<', '>', ',', '?', '~', '`'];
   for (const char of forbiddenChars) {
     if (hostname.includes(char)) {
@@ -144,7 +161,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 13. Check protocol (must be http or https)
+  // 15. Check protocol (must be http or https)
   if (hasProtocol) {
     const protocol = urlObj.protocol;
     if (protocol !== 'http:' && protocol !== 'https:') {
@@ -155,7 +172,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 14. Check for valid port (if specified)
+  // 16. Check for valid port (if specified)
   if (urlObj.port) {
     const portNum = parseInt(urlObj.port, 10);
     if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
@@ -166,7 +183,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 15. Check for localhost/private IPs (optional - can be allowed or blocked)
+  // 17. Check for localhost/private IPs (optional - can be allowed or blocked)
   // Uncomment if you want to block localhost:
   // if (hostname === 'localhost' || hostname.startsWith('127.') || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
   //   return {
@@ -175,7 +192,7 @@ export function validateUrl(urlString) {
   //   };
   // }
 
-  // 16. Check for suspicious subdomain patterns on well-known domains
+  // 18. Check for suspicious subdomain patterns on well-known domains
   if (domainParts.length >= 2) {
     const subdomain = domainParts[0];
     const mainDomain = domainParts.slice(1).join('.');
@@ -223,7 +240,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 17. Check for common typos
+  // 19. Check for common typos
   const commonTypos = {
     'http:///': 'http://',
     'https:///': 'https://',
@@ -231,7 +248,7 @@ export function validateUrl(urlString) {
     'https:/': 'https://',
   };
 
-  // 18. Check for minimum domain part length (each part should be at least 1 char, but warn on very short)
+  // 20. Check for minimum domain part length (each part should be at least 1 char, but warn on very short)
   for (let i = 0; i < domainParts.length - 1; i++) {
     const part = domainParts[i];
     if (part.length === 0) {
@@ -242,7 +259,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 19. Normalize URL - return with https:// if no protocol
+  // 21. Normalize URL - return with https:// if no protocol
   const normalizedUrl = hasProtocol ? lowercased : `https://${lowercased}`;
 
   // All validations passed
