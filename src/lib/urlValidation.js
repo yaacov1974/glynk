@@ -175,7 +175,55 @@ export function validateUrl(urlString) {
   //   };
   // }
 
-  // 16. Check for common typos
+  // 16. Check for suspicious subdomain patterns on well-known domains
+  if (domainParts.length >= 2) {
+    const subdomain = domainParts[0];
+    const mainDomain = domainParts.slice(1).join('.');
+    
+    // List of well-known domains that shouldn't have suspicious subdomains
+    const wellKnownDomains = [
+      'google.com', 'google.co.il', 'google.co.uk', 'google.fr', 'google.de',
+      'facebook.com', 'youtube.com', 'amazon.com', 'amazon.co.uk',
+      'microsoft.com', 'apple.com', 'twitter.com', 'x.com',
+      'instagram.com', 'linkedin.com', 'github.com', 'netflix.com',
+      'paypal.com', 'ebay.com', 'walmart.com', 'target.com',
+    ];
+    
+    // Check if main domain is well-known
+    if (wellKnownDomains.includes(mainDomain)) {
+      // Flag suspiciously short subdomains (1-3 characters) on well-known domains
+      if (subdomain.length > 0 && subdomain.length <= 3) {
+        // Allow common legitimate short subdomains
+        const legitimateShortSubdomains = [
+          'www', 'api', 'cdn', 'img', 'js', 'css', 'ftp', 'smtp', 'mail', 
+          'pop', 'imap', 'vpn', 'ssh', 'git', 'dev', 'stg', 'prd', 'uat', 
+          'test', 'qa', 'app', 'web', 'mob', 'ios', 'win', 'mac', 'old', 
+          'new', 'tmp', 'bak', 'log', 'db', 'sql', 'node', 'php', 'py', 
+          'go', 'rb', 'java', 'net', 'asp', 'jsp', 'html', 'xml', 'json',
+        ];
+        
+        if (!legitimateShortSubdomains.includes(subdomain.toLowerCase())) {
+          return {
+            isValid: false,
+            error: `Suspicious subdomain detected. "${subdomain}.${mainDomain}" may be a typo or phishing attempt. Please verify the URL is correct.`,
+          };
+        }
+      }
+    }
+    
+    // Check for suspiciously short main domain parts
+    if (domainParts.length === 2) {
+      const domainName = domainParts[0];
+      if (domainName.length <= 1) {
+        return {
+          isValid: false,
+          error: 'Domain name is too short. Please verify the URL is correct.',
+        };
+      }
+    }
+  }
+
+  // 17. Check for common typos
   const commonTypos = {
     'http:///': 'http://',
     'https:///': 'https://',
@@ -183,7 +231,18 @@ export function validateUrl(urlString) {
     'https:/': 'https://',
   };
 
-  // 17. Normalize URL - return with https:// if no protocol
+  // 18. Check for minimum domain part length (each part should be at least 1 char, but warn on very short)
+  for (let i = 0; i < domainParts.length - 1; i++) {
+    const part = domainParts[i];
+    if (part.length === 0) {
+      return {
+        isValid: false,
+        error: 'Domain parts cannot be empty',
+      };
+    }
+  }
+
+  // 19. Normalize URL - return with https:// if no protocol
   const normalizedUrl = hasProtocol ? lowercased : `https://${lowercased}`;
 
   // All validations passed
