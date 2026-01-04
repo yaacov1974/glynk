@@ -5,6 +5,9 @@
  * This prevents unnecessary calls to Cloudflare Worker and Google Safe Browsing API.
  */
 
+import isFQDN from 'validator/lib/isFQDN';
+import isURL from 'validator/lib/isURL';
+
 /**
  * Validate URL structure and format
  * 
@@ -59,148 +62,24 @@ export function validateUrl(urlString) {
     };
   }
 
-  // 6. Check for at least one dot
-  if (!hostname.includes('.')) {
+  // 6. Use validator library to check if hostname is a valid FQDN (Fully Qualified Domain Name)
+  // This catches cases like "www.saasaipartners" (missing TLD)
+  if (!isFQDN(hostname, {
+    require_tld: true,        // Must have TLD
+    allow_underscores: false, // No underscores allowed
+    allow_trailing_dot: false, // No trailing dot
+    allow_numeric_tld: false,  // TLD cannot be numeric
+  })) {
     return {
       isValid: false,
-      error: 'Domain must contain at least one dot (e.g., domain.com)',
+      error: 'Invalid domain format. Domain must be a fully qualified domain name (FQDN) with a valid TLD. Example: domain.com',
     };
   }
 
-  // 7. Split domain into parts
+  // 7. Split domain into parts for additional custom checks
   const domainParts = hostname.split('.');
 
-  // 8. Check that we have at least 2 parts (domain + TLD)
-  if (domainParts.length < 2) {
-    return {
-      isValid: false,
-      error: 'Domain must include a top-level domain (TLD). Example: domain.com, not just "domain"',
-    };
-  }
-
-  // 9. Check TLD (Top Level Domain)
-  const tld = domainParts[domainParts.length - 1];
-  if (!tld || tld.length === 0) {
-    return {
-      isValid: false,
-      error: 'Domain extension (TLD) cannot be empty',
-    };
-  }
-
-  // 10. Check that TLD contains only letters (no numbers or hyphens in TLD)
-  const tldRegex = /^[a-z]+$/;
-  if (!tldRegex.test(tld)) {
-    return {
-      isValid: false,
-      error: 'Domain extension (TLD) can only contain letters',
-    };
-  }
-
-  // 11. Check TLD length - must be between 2 and 63 characters, but typically 2-4
-  // If TLD is longer than 6 characters, it's likely a domain name, not a TLD
-  if (tld.length < 2) {
-    return {
-      isValid: false,
-      error: 'Domain extension (TLD) must be at least 2 characters (e.g., .com, .io)',
-    };
-  }
-
-  // 12. Check if TLD is suspiciously long (likely a domain name, not TLD)
-  // Most common TLDs are 2-4 characters. Some newer ones are longer (like .technology)
-  // But if it's longer than 10 characters, it's almost certainly not a TLD
-  if (tld.length > 10) {
-    return {
-      isValid: false,
-      error: `"${tld}" appears to be a domain name, not a top-level domain (TLD). Please include a valid TLD like .com, .org, .io, etc.`,
-    };
-  }
-
-  // 13. Additional check: if we only have 2 parts and the "TLD" is longer than 4 chars,
-  // it might be a domain name without TLD (e.g., "www.saasaipartners")
-  if (domainParts.length === 2 && tld.length > 4) {
-    // Check against common long TLDs to allow them
-    const commonLongTlds = [
-      'technology', 'photography', 'international', 'organization', 'foundation',
-      'construction', 'engineering', 'management', 'consulting', 'enterprises',
-      'productions', 'ventures', 'partners', 'holdings', 'solutions', 'services',
-      'systems', 'industries', 'properties', 'developments', 'communications',
-      'institutions', 'associations', 'corporation', 'university', 'education',
-    ];
-    
-    if (!commonLongTlds.includes(tld.toLowerCase())) {
-      return {
-        isValid: false,
-        error: `"${tld}" appears to be a domain name, not a top-level domain (TLD). Please include a valid TLD like .com, .org, .io, etc. Example: ${hostname}.com`,
-      };
-    }
-  }
-
-  // 11. Check each domain part (label)
-  for (let i = 0; i < domainParts.length; i++) {
-    const part = domainParts[i];
-    
-    // Check label length (max 63 characters)
-    if (part.length > 63) {
-      return {
-        isValid: false,
-        error: `Domain part "${part}" exceeds maximum length of 63 characters`,
-      };
-    }
-
-    // Check for forbidden characters (only letters, numbers, and hyphens allowed)
-    const validDomainRegex = /^[a-z0-9-]+$/;
-    if (!validDomainRegex.test(part)) {
-      return {
-        isValid: false,
-        error: 'Domain contains invalid characters. Only letters, numbers, and hyphens are allowed',
-      };
-    }
-
-    // Check for hyphens at start or end (not allowed)
-    if (part.startsWith('-') || part.endsWith('-')) {
-      return {
-        isValid: false,
-        error: 'Domain parts cannot start or end with a hyphen',
-      };
-    }
-
-    // Check for consecutive hyphens
-    if (part.includes('--')) {
-      return {
-        isValid: false,
-        error: 'Domain cannot contain consecutive hyphens',
-      };
-    }
-  }
-
-  // 12. Check total domain length (max 253 characters)
-  if (hostname.length > 253) {
-    return {
-      isValid: false,
-      error: 'Domain exceeds maximum length of 253 characters',
-    };
-  }
-
-  // 13. Check for spaces (shouldn't exist after trim, but double-check)
-  if (hostname.includes(' ')) {
-    return {
-      isValid: false,
-      error: 'Domain cannot contain spaces',
-    };
-  }
-
-  // 14. Check for special forbidden characters
-  const forbiddenChars = ['@', '!', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '[', ']', '{', '}', '|', '\\', ';', ':', '"', "'", '<', '>', ',', '?', '~', '`'];
-  for (const char of forbiddenChars) {
-    if (hostname.includes(char)) {
-      return {
-        isValid: false,
-        error: `Domain cannot contain the character "${char}"`,
-      };
-    }
-  }
-
-  // 15. Check protocol (must be http or https)
+  // 12. Check protocol (must be http or https)
   if (hasProtocol) {
     const protocol = urlObj.protocol;
     if (protocol !== 'http:' && protocol !== 'https:') {
@@ -211,7 +90,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 16. Check for valid port (if specified)
+  // 13. Check for valid port (if specified)
   if (urlObj.port) {
     const portNum = parseInt(urlObj.port, 10);
     if (isNaN(portNum) || portNum < 1 || portNum > 65535) {
@@ -222,7 +101,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 17. Check for localhost/private IPs (optional - can be allowed or blocked)
+  // 14. Check for localhost/private IPs (optional - can be allowed or blocked)
   // Uncomment if you want to block localhost:
   // if (hostname === 'localhost' || hostname.startsWith('127.') || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
   //   return {
@@ -231,7 +110,7 @@ export function validateUrl(urlString) {
   //   };
   // }
 
-  // 18. Check for suspicious subdomain patterns on well-known domains
+  // 15. Check for suspicious subdomain patterns on well-known domains
   if (domainParts.length >= 2) {
     const subdomain = domainParts[0];
     const mainDomain = domainParts.slice(1).join('.');
@@ -279,7 +158,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 19. Check for common typos
+  // 16. Check for common typos
   const commonTypos = {
     'http:///': 'http://',
     'https:///': 'https://',
@@ -287,7 +166,7 @@ export function validateUrl(urlString) {
     'https:/': 'https://',
   };
 
-  // 20. Check for minimum domain part length (each part should be at least 1 char, but warn on very short)
+  // 17. Check for minimum domain part length (each part should be at least 1 char, but warn on very short)
   for (let i = 0; i < domainParts.length - 1; i++) {
     const part = domainParts[i];
     if (part.length === 0) {
@@ -298,7 +177,7 @@ export function validateUrl(urlString) {
     }
   }
 
-  // 21. Normalize URL - return with https:// if no protocol
+  // 18. Normalize URL - return with https:// if no protocol
   const normalizedUrl = hasProtocol ? lowercased : `https://${lowercased}`;
 
   // All validations passed
