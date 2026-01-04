@@ -53,6 +53,7 @@ const Step1FastTrack = ({
   const [fetchingTitle, setFetchingTitle] = useState(false);
   const [checkingSlug, setCheckingSlug] = useState(false);
   const [slugError, setSlugError] = useState(null);
+  const [isSlugAvailable, setIsSlugAvailable] = useState(null); // null = not checked, true = available, false = taken
   const [safetyCheck, setSafetyCheck] = useState({
     loading: false,
     isSafe: null,
@@ -252,6 +253,7 @@ const Step1FastTrack = ({
     // Check if user has entered a slug
     if (!formData.slug || !formData.slug.trim()) {
       setSlugError("Please enter a slug before checking");
+      setIsSlugAvailable(null);
       return;
     }
 
@@ -267,6 +269,7 @@ const Step1FastTrack = ({
 
       if (!user) {
         setSlugError("You must be logged in to check slug availability");
+        setIsSlugAvailable(null);
         setCheckingSlug(false);
         return;
       }
@@ -283,6 +286,7 @@ const Step1FastTrack = ({
       if (error) {
         console.error("Error checking slug:", error);
         setSlugError("Error checking slug availability. Please try again.");
+        setIsSlugAvailable(null);
         setCheckingSlug(false);
         return;
       }
@@ -291,13 +295,16 @@ const Step1FastTrack = ({
         setSlugError(
           `This slug "${slugToCheck}" is already taken for domain "${selectedDomain}". Please choose a different slug.`
         );
+        setIsSlugAvailable(false);
       } else {
-        // Slug is available - clear any previous error
+        // Slug is available - clear any previous error and mark as available
         setSlugError(null);
+        setIsSlugAvailable(true);
       }
     } catch (error) {
       console.error("Error checking slug:", error);
       setSlugError("Error checking slug availability. Please try again.");
+      setIsSlugAvailable(null);
     } finally {
       setCheckingSlug(false);
     }
@@ -309,13 +316,14 @@ const Step1FastTrack = ({
 
   // Show "Create with Defaults" button only when:
   // 1. URL is verified (safety check passed)
-  // 2. Slug is provided (user entered or auto-generated)
+  // 2. Slug is provided and verified (slug check passed)
   const canCreate =
     formData.targetUrl &&
     formData.targetUrl.trim() &&
     safetyCheck.isSafe === true &&
     formData.slug &&
-    formData.slug.trim();
+    formData.slug.trim() &&
+    isSlugAvailable === true;
 
   return (
     <motion.div
@@ -473,22 +481,31 @@ const Step1FastTrack = ({
             value={formData.slug}
             onChange={(e) => {
               updateFormData("slug", e.target.value);
-              // Clear error when user types
+              // Clear error and reset availability when user types
               if (slugError) {
                 setSlugError(null);
+              }
+              if (isSlugAvailable !== null) {
+                setIsSlugAvailable(null); // Reset to blue/default when user changes slug
               }
             }}
             placeholder="e.g., iphone-deal"
             className={`flex-1 px-4 py-3 bg-[#0b0f19] border rounded-xl text-white placeholder-slate-500 focus:outline-none transition-colors ${
               slugError
                 ? "border-red-500 focus:border-red-500"
+                : isSlugAvailable === true
+                ? "border-green-500 focus:border-green-500"
                 : "border-[#232f48] focus:border-primary"
             }`}
           />
           <button
             onClick={handleCheckSlug}
             disabled={checkingSlug}
-            className="px-5 py-3 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary rounded-xl transition-colors flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`px-5 py-3 rounded-xl transition-colors flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+              isSlugAvailable === true
+                ? "bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400"
+                : "bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary"
+            }`}
             title="Check if slug is available"
           >
             {checkingSlug ? (
@@ -497,6 +514,11 @@ const Step1FastTrack = ({
                   refresh
                 </span>
                 <span className="hidden sm:inline">Checking...</span>
+              </>
+            ) : isSlugAvailable === true ? (
+              <>
+                <span className="material-symbols-outlined">check_circle</span>
+                <span className="hidden sm:inline">Available</span>
               </>
             ) : (
               <>
@@ -513,6 +535,14 @@ const Step1FastTrack = ({
             className="text-red-400 text-xs mt-2 text-left"
           >
             {slugError}
+          </motion.p>
+        ) : isSlugAvailable === true ? (
+          <motion.p
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-green-400 text-xs mt-2 text-left"
+          >
+            ✓ Slug is available!
           </motion.p>
         ) : (
           <p className="text-xs text-slate-500 mt-2">
