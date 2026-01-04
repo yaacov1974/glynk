@@ -50,6 +50,7 @@ const Step1FastTrack = ({
   onSafetyCheckUpdate,
 }) => {
   const [domains, setDomains] = useState(["goodlink.ai"]);
+  const [hasCustomDomains, setHasCustomDomains] = useState(false);
   const [fetchingTitle, setFetchingTitle] = useState(false);
   const [safetyCheck, setSafetyCheck] = useState({
     loading: false,
@@ -65,11 +66,63 @@ const Step1FastTrack = ({
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          // TODO: Fetch from domains table when implemented
-          setDomains(["goodlink.ai"]);
+          // Try to fetch from domains table first
+          const { data: customDomains, error: domainsError } = await supabase
+            .from("domains")
+            .select("domain")
+            .eq("user_id", user.id)
+            .neq("domain", "goodlink.ai");
+
+          if (!domainsError && customDomains && customDomains.length > 0) {
+            // User has custom domains - show all options including default
+            const customDomainList = customDomains.map((d) => d.domain);
+            setDomains(["goodlink.ai", ...customDomainList]);
+            setHasCustomDomains(true);
+          } else {
+            // No custom domains table or no custom domains found
+            // Check if user has any links with custom domains in links table
+            const { data: linksWithCustomDomains, error: linksError } =
+              await supabase
+                .from("links")
+                .select("domain")
+                .eq("user_id", user.id)
+                .neq("domain", "goodlink.ai")
+                .limit(1);
+
+            if (
+              !linksError &&
+              linksWithCustomDomains &&
+              linksWithCustomDomains.length > 0
+            ) {
+              // User has used custom domains before - get all unique domains
+              const { data: allDomains } = await supabase
+                .from("links")
+                .select("domain")
+                .eq("user_id", user.id);
+
+              if (allDomains && allDomains.length > 0) {
+                const uniqueDomains = [
+                  ...new Set(allDomains.map((l) => l.domain)),
+                ];
+                setDomains(uniqueDomains);
+                setHasCustomDomains(true);
+              } else {
+                // No custom domains - hide the section
+                setDomains(["goodlink.ai"]);
+                setHasCustomDomains(false);
+              }
+            } else {
+              // No custom domains - hide the section
+              setDomains(["goodlink.ai"]);
+              setHasCustomDomains(false);
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching domains:", error);
+        // On error, default to hiding custom domain selection
+        setDomains(["goodlink.ai"]);
+        setHasCustomDomains(false);
       }
     };
     fetchDomains();
@@ -382,30 +435,32 @@ const Step1FastTrack = ({
         </p>
       </div>
 
-      {/* Custom Domain Chips */}
-      <div className="max-w-2xl mx-auto">
-        <label className="block text-sm font-medium text-white mb-3">
-          Custom Domain
-        </label>
-        <div className="flex flex-wrap gap-2">
-          {domains.map((domain) => {
-            const isSelected = (formData.domain || domains[0]) === domain;
-            return (
-              <button
-                key={domain}
-                onClick={() => handleDomainSelect(domain)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  isSelected
-                    ? "bg-primary text-white shadow-lg shadow-primary/30"
-                    : "bg-[#0b0f19] border border-[#232f48] text-slate-300 hover:border-primary/50"
-                }`}
-              >
-                {domain}
-              </button>
-            );
-          })}
+      {/* Custom Domain Chips - Only show if user has at least one custom domain */}
+      {hasCustomDomains && (
+        <div className="max-w-2xl mx-auto">
+          <label className="block text-sm font-medium text-white mb-3">
+            Custom Domain
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {domains.map((domain) => {
+              const isSelected = (formData.domain || domains[0]) === domain;
+              return (
+                <button
+                  key={domain}
+                  onClick={() => handleDomainSelect(domain)}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                    isSelected
+                      ? "bg-primary text-white shadow-lg shadow-primary/30"
+                      : "bg-[#0b0f19] border border-[#232f48] text-slate-300 hover:border-primary/50"
+                  }`}
+                >
+                  {domain}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Preview */}
       {(formData.domain || domains[0]) && formData.slug && (
