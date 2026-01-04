@@ -59,6 +59,7 @@ const Step1FastTrack = ({
     isSafe: null,
     threatType: null,
     error: null,
+    urlExists: false, // Track if URL already exists in links table
   });
 
   useEffect(() => {
@@ -138,6 +139,7 @@ const Step1FastTrack = ({
         isSafe: null,
         threatType: null,
         error: null,
+        urlExists: false,
       });
       // Reset safety in parent
       if (onSafetyCheckUpdate) {
@@ -155,6 +157,7 @@ const Step1FastTrack = ({
         isSafe: null,
         threatType: null,
         error: validation.error || "Invalid URL format",
+        urlExists: false,
       });
       if (onSafetyCheckUpdate) {
         onSafetyCheckUpdate({ isSafe: null, threatType: null });
@@ -168,18 +171,48 @@ const Step1FastTrack = ({
     // Perform safety check with normalized URL (only if validation passed)
     setSafetyCheck((prev) => ({ ...prev, loading: true }));
     const result = await checkUrlSafety(normalizedUrl);
+
+    // Check if URL already exists in links table (only if safety check passed)
+    let urlExists = false;
+    if (result.isSafe) {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: existingLinks, error: linksError } = await supabase
+            .from("links")
+            .select("id, target_url")
+            .eq("user_id", user.id)
+            .eq("target_url", normalizedUrl)
+            .limit(1);
+
+          if (!linksError && existingLinks && existingLinks.length > 0) {
+            urlExists = true;
+          }
+        }
+      } catch (error) {
+        console.error("Error checking if URL exists:", error);
+        // Don't block user on error, just log it
+      }
+    }
+
     const safetyState = {
       loading: false,
-      isSafe: result.isSafe,
+      isSafe: result.isSafe && !urlExists, // URL is safe only if it's safe AND doesn't exist
       threatType: result.threatType,
-      error: result.error || null,
+      error: urlExists
+        ? "This URL already exists in your links. Please use a different URL."
+        : result.error || null,
+      urlExists: urlExists,
     };
     setSafetyCheck(safetyState);
 
     // Update parent component with safety check result
     if (onSafetyCheckUpdate) {
       onSafetyCheckUpdate({
-        isSafe: result.isSafe,
+        isSafe: result.isSafe && !urlExists,
         threatType: result.threatType,
       });
     }
@@ -421,7 +454,7 @@ const Step1FastTrack = ({
               </motion.div>
             )}
 
-          {/* Safety Warning */}
+          {/* Safety Warning / URL Exists Warning */}
           {!safetyCheck.loading && safetyCheck.isSafe === false && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
@@ -430,19 +463,21 @@ const Step1FastTrack = ({
             >
               <div className="flex items-start gap-3">
                 <span className="material-symbols-outlined text-red-400 text-xl flex-shrink-0">
-                  warning
+                  {safetyCheck.urlExists ? "link_off" : "warning"}
                 </span>
                 <div className="flex-1">
                   <h4 className="text-red-400 font-bold text-sm mb-1">
-                    Unsafe Link Detected
+                    {safetyCheck.urlExists
+                      ? "URL Already Exists"
+                      : "Unsafe Link Detected"}
                   </h4>
                   <p className="text-red-300 text-xs">
-                    This URL has been flagged as{" "}
-                    <strong>
-                      {safetyCheck.threatType || "potentially unsafe"}
-                    </strong>{" "}
-                    by Google Safe Browsing. We recommend not using this link
-                    for security reasons.
+                    {safetyCheck.urlExists
+                      ? safetyCheck.error ||
+                        "This URL already exists in your links. Please use a different URL."
+                      : `This URL has been flagged as ${
+                          safetyCheck.threatType || "potentially unsafe"
+                        } by Google Safe Browsing. We recommend not using this link for security reasons.`}
                   </p>
                 </div>
               </div>
