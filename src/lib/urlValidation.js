@@ -78,12 +78,12 @@ export function validateUrl(urlString) {
     };
   }
 
-  // 9. Check TLD (Top Level Domain) - must be at least 2 characters
+  // 9. Check TLD (Top Level Domain)
   const tld = domainParts[domainParts.length - 1];
-  if (!tld || tld.length < 2) {
+  if (!tld || tld.length === 0) {
     return {
       isValid: false,
-      error: 'Domain extension (TLD) must be at least 2 characters (e.g., .com, .io)',
+      error: 'Domain extension (TLD) cannot be empty',
     };
   }
 
@@ -94,6 +94,45 @@ export function validateUrl(urlString) {
       isValid: false,
       error: 'Domain extension (TLD) can only contain letters',
     };
+  }
+
+  // 11. Check TLD length - must be between 2 and 63 characters, but typically 2-4
+  // If TLD is longer than 6 characters, it's likely a domain name, not a TLD
+  if (tld.length < 2) {
+    return {
+      isValid: false,
+      error: 'Domain extension (TLD) must be at least 2 characters (e.g., .com, .io)',
+    };
+  }
+
+  // 12. Check if TLD is suspiciously long (likely a domain name, not TLD)
+  // Most common TLDs are 2-4 characters. Some newer ones are longer (like .technology)
+  // But if it's longer than 10 characters, it's almost certainly not a TLD
+  if (tld.length > 10) {
+    return {
+      isValid: false,
+      error: `"${tld}" appears to be a domain name, not a top-level domain (TLD). Please include a valid TLD like .com, .org, .io, etc.`,
+    };
+  }
+
+  // 13. Additional check: if we only have 2 parts and the "TLD" is longer than 4 chars,
+  // it might be a domain name without TLD (e.g., "www.saasaipartners")
+  if (domainParts.length === 2 && tld.length > 4) {
+    // Check against common long TLDs to allow them
+    const commonLongTlds = [
+      'technology', 'photography', 'international', 'organization', 'foundation',
+      'construction', 'engineering', 'management', 'consulting', 'enterprises',
+      'productions', 'ventures', 'partners', 'holdings', 'solutions', 'services',
+      'systems', 'industries', 'properties', 'developments', 'communications',
+      'institutions', 'associations', 'corporation', 'university', 'education',
+    ];
+    
+    if (!commonLongTlds.includes(tld.toLowerCase())) {
+      return {
+        isValid: false,
+        error: `"${tld}" appears to be a domain name, not a top-level domain (TLD). Please include a valid TLD like .com, .org, .io, etc. Example: ${hostname}.com`,
+      };
+    }
   }
 
   // 11. Check each domain part (label)
