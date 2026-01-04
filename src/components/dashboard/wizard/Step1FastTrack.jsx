@@ -1,47 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { supabase } from '../../../lib/supabase';
-import { checkUrlSafety } from '../../../lib/urlSafetyCheck';
-import { validateUrl } from '../../../lib/urlValidation';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { supabase } from "../../../lib/supabase";
+import { checkUrlSafety } from "../../../lib/urlSafetyCheck";
+import { validateUrl } from "../../../lib/urlValidation";
 
 // Utility function to fetch page title from URL
 const fetchPageTitle = async (url) => {
   try {
     // Validate URL first
     new URL(url);
-    
+
     // Use a CORS proxy to fetch the page
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(
+      url
+    )}`;
     const response = await fetch(proxyUrl, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Accept': 'application/json',
+        Accept: "application/json",
       },
     });
-    
+
     if (!response.ok) {
-      throw new Error('Failed to fetch page');
+      throw new Error("Failed to fetch page");
     }
-    
+
     const data = await response.json();
-    
+
     if (data.contents) {
       // Parse HTML to extract title
       const parser = new DOMParser();
-      const doc = parser.parseFromString(data.contents, 'text/html');
-      const title = doc.querySelector('title')?.textContent || '';
+      const doc = parser.parseFromString(data.contents, "text/html");
+      const title = doc.querySelector("title")?.textContent || "";
       return title.trim();
     }
-    return '';
+    return "";
   } catch (error) {
-    console.error('Error fetching page title:', error);
+    console.error("Error fetching page title:", error);
     // Return empty string on error - user can manually enter name
-    return '';
+    return "";
   }
 };
 
-const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickCreate, onSafetyCheckUpdate }) => {
-  const [domains, setDomains] = useState(['goodlink.ai']);
+const Step1FastTrack = ({
+  formData,
+  updateFormData,
+  generateRandomSlug,
+  onQuickCreate,
+  onSafetyCheckUpdate,
+}) => {
+  const [domains, setDomains] = useState(["goodlink.ai"]);
   const [loadingDomains, setLoadingDomains] = useState(false);
   const [fetchingTitle, setFetchingTitle] = useState(false);
   const [safetyCheck, setSafetyCheck] = useState({
@@ -55,13 +63,15 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
     const fetchDomains = async () => {
       setLoadingDomains(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           // TODO: Fetch from domains table when implemented
-          setDomains(['goodlink.ai']);
+          setDomains(["goodlink.ai"]);
         }
       } catch (error) {
-        console.error('Error fetching domains:', error);
+        console.error("Error fetching domains:", error);
       } finally {
         setLoadingDomains(false);
       }
@@ -72,14 +82,14 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
   // Helper function to normalize URL (add https:// if missing)
   const normalizeUrl = (urlString) => {
     if (!urlString || !urlString.trim()) return null;
-    
+
     const trimmed = urlString.trim();
-    
+
     // If already has protocol, return as is
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
       return trimmed;
     }
-    
+
     // Add https:// if missing
     return `https://${trimmed}`;
   };
@@ -87,7 +97,12 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
   // Safety check function - called when user leaves the field
   const performSafetyCheck = async () => {
     if (!formData.targetUrl || !formData.targetUrl.trim()) {
-      setSafetyCheck({ loading: false, isSafe: null, threatType: null, error: null });
+      setSafetyCheck({
+        loading: false,
+        isSafe: null,
+        threatType: null,
+        error: null,
+      });
       // Reset safety in parent
       if (onSafetyCheckUpdate) {
         onSafetyCheckUpdate({ isSafe: null, threatType: null });
@@ -97,13 +112,13 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
 
     // Comprehensive URL validation BEFORE making API calls
     const validation = validateUrl(formData.targetUrl);
-    
+
     if (!validation.isValid) {
       setSafetyCheck({
         loading: false,
         isSafe: null,
         threatType: null,
-        error: validation.error || 'Invalid URL format',
+        error: validation.error || "Invalid URL format",
       });
       if (onSafetyCheckUpdate) {
         onSafetyCheckUpdate({ isSafe: null, threatType: null });
@@ -115,7 +130,7 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
     const normalizedUrl = validation.normalizedUrl;
 
     // Perform safety check with normalized URL (only if validation passed)
-    setSafetyCheck(prev => ({ ...prev, loading: true }));
+    setSafetyCheck((prev) => ({ ...prev, loading: true }));
     const result = await checkUrlSafety(normalizedUrl);
     const safetyState = {
       loading: false,
@@ -124,7 +139,7 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
       error: result.error || null,
     };
     setSafetyCheck(safetyState);
-    
+
     // Update parent component with safety check result
     if (onSafetyCheckUpdate) {
       onSafetyCheckUpdate({
@@ -140,14 +155,14 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
       setFetchingTitle(false);
       // Clear name if URL is empty
       if (formData.name && formData.name.trim()) {
-        updateFormData('name', '');
+        updateFormData("name", "");
       }
       return;
     }
 
     // Comprehensive URL validation BEFORE making API calls
     const validation = validateUrl(formData.targetUrl);
-    
+
     if (!validation.isValid) {
       setFetchingTitle(false);
       return;
@@ -161,20 +176,20 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
       setFetchingTitle(true);
       const title = await fetchPageTitle(normalizedUrl);
       if (title && title.trim()) {
-        updateFormData('name', title.trim());
+        updateFormData("name", title.trim());
       } else {
         // If no title found, use domain name as fallback
         try {
           const urlObj = new URL(normalizedUrl);
-          const domainName = urlObj.hostname.replace('www.', '');
-          updateFormData('name', domainName);
+          const domainName = urlObj.hostname.replace("www.", "");
+          updateFormData("name", domainName);
         } catch {
           // If still fails, leave empty
         }
       }
     } catch (error) {
       // Invalid URL, skip fetching
-      console.log('Error fetching title:', error);
+      console.log("Error fetching title:", error);
     } finally {
       setFetchingTitle(false);
     }
@@ -182,11 +197,11 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
 
   const handleUrlChange = (e) => {
     const url = e.target.value;
-    updateFormData('targetUrl', url);
-    
+    updateFormData("targetUrl", url);
+
     // Reset name when URL changes (will be auto-filled again by useEffect)
     if (url && url !== formData.targetUrl) {
-      updateFormData('name', '');
+      updateFormData("name", "");
     }
   };
 
@@ -197,11 +212,11 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
 
   const handleMagicWand = () => {
     const randomSlug = generateRandomSlug();
-    updateFormData('slug', randomSlug);
+    updateFormData("slug", randomSlug);
   };
 
   const handleDomainSelect = (domain) => {
-    updateFormData('domain', domain);
+    updateFormData("domain", domain);
   };
 
   const canCreate = formData.targetUrl && formData.targetUrl.trim();
@@ -235,10 +250,10 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
               placeholder="Paste your URL here..."
               className={`w-full px-6 py-5 text-lg bg-[#0b0f19] border-2 rounded-2xl text-white placeholder-slate-500 focus:outline-none transition-all shadow-lg ${
                 safetyCheck.isSafe === false
-                  ? 'border-red-500 focus:border-red-500'
+                  ? "border-red-500 focus:border-red-500"
                   : safetyCheck.isSafe === true
-                  ? 'border-green-500/50 focus:border-green-500'
-                  : 'border-[#232f48] focus:border-primary'
+                  ? "border-green-500/50 focus:border-green-500"
+                  : "border-[#232f48] focus:border-primary"
               }`}
               autoFocus
             />
@@ -248,18 +263,24 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
                   <span className="material-symbols-outlined animate-spin text-primary text-lg">
                     refresh
                   </span>
-                  <span className="hidden sm:inline">Scanning for safety...</span>
+                  <span className="hidden sm:inline">
+                    Scanning for safety...
+                  </span>
                 </div>
               )}
               {!safetyCheck.loading && safetyCheck.isSafe === true && (
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium">
-                  <span className="material-symbols-outlined text-sm">verified</span>
+                  <span className="material-symbols-outlined text-sm">
+                    verified
+                  </span>
                   <span className="hidden sm:inline">Secure Link</span>
                 </div>
               )}
               {!safetyCheck.loading && safetyCheck.isSafe === false && (
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs font-medium">
-                  <span className="material-symbols-outlined text-sm">warning</span>
+                  <span className="material-symbols-outlined text-sm">
+                    warning
+                  </span>
                   <span className="hidden sm:inline">Unsafe</span>
                 </div>
               )}
@@ -270,25 +291,31 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
               )}
             </div>
           </div>
-          
+
           {/* Validation Error */}
-          {!safetyCheck.loading && safetyCheck.error && safetyCheck.isSafe === null && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-4 p-4 bg-yellow-500/10 border-2 border-yellow-500/50 rounded-xl"
-            >
-              <div className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-yellow-400 text-xl flex-shrink-0">info</span>
-                <div className="flex-1">
-                  <h4 className="text-yellow-400 font-bold text-sm mb-1">Invalid URL Format</h4>
-                  <p className="text-yellow-300 text-xs">
-                    {safetyCheck.error}
-                  </p>
+          {!safetyCheck.loading &&
+            safetyCheck.error &&
+            safetyCheck.isSafe === null && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-4 bg-yellow-500/10 border-2 border-yellow-500/50 rounded-xl"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="material-symbols-outlined text-yellow-400 text-xl flex-shrink-0">
+                    info
+                  </span>
+                  <div className="flex-1">
+                    <h4 className="text-yellow-400 font-bold text-sm mb-1">
+                      Invalid URL Format
+                    </h4>
+                    <p className="text-yellow-300 text-xs">
+                      {safetyCheck.error}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
 
           {/* Safety Warning */}
           {!safetyCheck.loading && safetyCheck.isSafe === false && (
@@ -298,18 +325,26 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
               className="mt-4 p-4 bg-red-500/10 border-2 border-red-500/50 rounded-xl"
             >
               <div className="flex items-start gap-3">
-                <span className="material-symbols-outlined text-red-400 text-xl flex-shrink-0">warning</span>
+                <span className="material-symbols-outlined text-red-400 text-xl flex-shrink-0">
+                  warning
+                </span>
                 <div className="flex-1">
-                  <h4 className="text-red-400 font-bold text-sm mb-1">Unsafe Link Detected</h4>
+                  <h4 className="text-red-400 font-bold text-sm mb-1">
+                    Unsafe Link Detected
+                  </h4>
                   <p className="text-red-300 text-xs">
-                    This URL has been flagged as <strong>{safetyCheck.threatType || 'potentially unsafe'}</strong> by Google Safe Browsing.
-                    We recommend not using this link for security reasons.
+                    This URL has been flagged as{" "}
+                    <strong>
+                      {safetyCheck.threatType || "potentially unsafe"}
+                    </strong>{" "}
+                    by Google Safe Browsing. We recommend not using this link
+                    for security reasons.
                   </p>
                 </div>
               </div>
             </motion.div>
           )}
-          
+
           {/* Auto-filled Name (appears below URL input) */}
           {formData.name && (
             <motion.div
@@ -317,11 +352,13 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
               animate={{ opacity: 1, y: 0 }}
               className="mt-4 p-4 bg-[#0b0f19] border border-[#232f48] rounded-xl"
             >
-              <label className="block text-xs text-slate-500 mb-1">Internal Name (Auto-filled)</label>
+              <label className="block text-xs text-slate-500 mb-1">
+                Internal Name (Auto-filled)
+              </label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => updateFormData('name', e.target.value)}
+                onChange={(e) => updateFormData("name", e.target.value)}
                 className="w-full px-3 py-2 bg-[#101622] border border-[#232f48] rounded-lg text-white text-sm focus:outline-none focus:border-primary transition-colors"
               />
             </motion.div>
@@ -338,7 +375,7 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
           <input
             type="text"
             value={formData.slug}
-            onChange={(e) => updateFormData('slug', e.target.value)}
+            onChange={(e) => updateFormData("slug", e.target.value)}
             placeholder="e.g., iphone-deal"
             className="flex-1 px-4 py-3 bg-[#0b0f19] border border-[#232f48] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-primary transition-colors"
           />
@@ -370,8 +407,8 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
                 onClick={() => handleDomainSelect(domain)}
                 className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
                   isSelected
-                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                    : 'bg-[#0b0f19] border border-[#232f48] text-slate-300 hover:border-primary/50'
+                    ? "bg-primary text-white shadow-lg shadow-primary/30"
+                    : "bg-[#0b0f19] border border-[#232f48] text-slate-300 hover:border-primary/50"
                 }`}
               >
                 {domain}
@@ -407,16 +444,21 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
             disabled={safetyCheck.isSafe === false}
             className={`w-full px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${
               safetyCheck.isSafe === false
-                ? 'opacity-50 cursor-not-allowed'
-                : ''
+                ? "opacity-50 cursor-not-allowed"
+                : ""
             }`}
-            title={safetyCheck.isSafe === false ? 'Cannot create link with unsafe URL' : ''}
+            title={
+              safetyCheck.isSafe === false
+                ? "Cannot create link with unsafe URL"
+                : ""
+            }
           >
             <span className="material-symbols-outlined">bolt</span>
             Create with Defaults (Skip Advanced Settings)
           </button>
           <p className="text-xs text-slate-500 text-center mt-2">
-            You can create the link now with default settings, or continue to customize UTM, pixels, and security
+            You can create the link now with default settings, or continue to
+            customize UTM, pixels, and security
           </p>
         </motion.div>
       )}
@@ -425,4 +467,3 @@ const Step1FastTrack = ({ formData, updateFormData, generateRandomSlug, onQuickC
 };
 
 export default Step1FastTrack;
-
