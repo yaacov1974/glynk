@@ -719,11 +719,25 @@ const Step1FastTrack = ({
           <button
             onClick={onQuickCreate}
             disabled={safetyCheck.isSafe === false}
-            className={`w-full px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${
+            className={`w-full px-6 py-3 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${
               safetyCheck.isSafe === false
                 ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
+            style={{
+              backgroundColor:
+                safetyCheck.isSafe === false ? undefined : "#de4aa8",
+            }}
+            onMouseEnter={(e) => {
+              if (safetyCheck.isSafe !== false) {
+                e.currentTarget.style.backgroundColor = "#d0399a";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (safetyCheck.isSafe !== false) {
+                e.currentTarget.style.backgroundColor = "#de4aa8";
+              }
+            }}
             title={
               safetyCheck.isSafe === false
                 ? "Cannot create link with unsafe URL"
