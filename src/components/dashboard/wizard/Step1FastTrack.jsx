@@ -418,7 +418,7 @@ const Step1FastTrack = ({
     updateFormData("domain", domain);
   };
 
-  // Show "Create with Defaults" button only when:
+  // Show "Create Quick Link" button only when:
   // 1. URL is verified (safety check passed)
   // 2. Slug is provided and verified (slug check passed)
   const canCreate =
@@ -731,7 +731,7 @@ const Step1FastTrack = ({
             }
           >
             <span className="material-symbols-outlined">bolt</span>
-            Create with Defaults (Skip Advanced Settings)
+            Create Quick Link (skip...)
           </button>
           <p className="text-xs text-slate-500 text-center mt-2">
             You can create the link now with default settings, or continue to
